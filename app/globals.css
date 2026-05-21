@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-cream-warm font-sans text-charcoal antialiased;
+  }
+
+  ::selection {
+    @apply bg-forest/20 text-forest-deep;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    @apply border border-forest/10 bg-white/55 backdrop-blur-xl;
+    box-shadow: 0 8px 32px rgba(15, 41, 34, 0.08);
+  }
+
+  .glass-nav {
+    @apply border border-white/10 bg-forest-deep/75 backdrop-blur-2xl;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .organic-blob {
+    border-radius: 60% 40% 55% 45% / 45% 55% 45% 55%;
+  }
+}
