@@ -1,22 +1,54 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, useInView } from "framer-motion";
-import { Play, Pause, Volume2, VolumeX, ArrowRight } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, ArrowRight, ExternalLink } from "lucide-react";
 import { fadeUp, staggerContainer } from "@/lib/motion";
+import {
+  youtubeEmbedUrl,
+  youtubeWatchUrl,
+  type PromoVideo,
+} from "@/lib/promo-videos";
+import YouTubeEmbed from "@/components/YouTubeEmbed";
 
 type VideoAdProps = {
   variant?: "banner" | "cinema";
+  /** Single YouTube video (cinema / legacy banner) */
+  youtubeVideoId?: string;
+  youtubeWatchFormat?: "video" | "short";
+  /** Both promo films under the banner heading */
+  youtubeVideos?: PromoVideo[];
 };
 
-export default function VideoAd({ variant = "banner" }: VideoAdProps) {
+export default function VideoAd({
+  variant = "banner",
+  youtubeVideoId,
+  youtubeWatchFormat = "video",
+  youtubeVideos,
+}: VideoAdProps) {
+  const isCinema = variant === "cinema";
+  const showYouTubeGallery = !isCinema && Boolean(youtubeVideos?.length);
+
   const ref = useRef(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const inView = useInView(ref, { once: true, margin: "-60px" });
   const [playing, setPlaying] = useState(true);
   const [muted, setMuted] = useState(true);
-  const [hasVideo, setHasVideo] = useState(true);
+  const [hasVideo, setHasVideo] = useState(
+    !youtubeVideoId && !showYouTubeGallery
+  );
+  const [youtubeSrc, setYoutubeSrc] = useState(() =>
+    youtubeVideoId ? youtubeEmbedUrl(youtubeVideoId, true) : ""
+  );
+
+  useEffect(() => {
+    if (!youtubeVideoId) return;
+    setYoutubeSrc(youtubeEmbedUrl(youtubeVideoId, true, window.location.origin));
+  }, [youtubeVideoId]);
+
+  const useYouTube = Boolean(youtubeVideoId) && !showYouTubeGallery;
+  const showMp4 = hasVideo && !useYouTube && !showYouTubeGallery;
 
   const togglePlay = () => {
     const video = videoRef.current;
@@ -37,7 +69,65 @@ export default function VideoAd({ variant = "banner" }: VideoAdProps) {
     setMuted(video.muted);
   };
 
-  const isCinema = variant === "cinema";
+  if (showYouTubeGallery && youtubeVideos) {
+    return (
+      <section
+        ref={ref}
+        className="bg-cream-warm px-6 py-20 md:px-10 md:py-28 lg:px-16"
+      >
+        <motion.div
+          initial="hidden"
+          animate={inView ? "visible" : "hidden"}
+          variants={staggerContainer}
+          className="mx-auto max-w-7xl"
+        >
+          <motion.div variants={fadeUp} custom={0} className="mb-10 max-w-2xl">
+            <span className="mb-3 inline-block rounded-full border border-gold/30 bg-gold/10 px-4 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-gold-muted">
+              Sponsored Film
+            </span>
+            <h2 className="font-serif text-4xl text-forest-deep md:text-5xl">
+              Voyanté — The Art of Arrival
+            </h2>
+            <p className="mt-4 text-sm leading-relaxed text-charcoal-muted md:text-base">
+              Our brand film captures the philosophy behind AI-curated luxury:
+              silence, precision, and journeys written entirely for you.
+            </p>
+          </motion.div>
+
+          <motion.div
+            variants={fadeUp}
+            custom={1}
+            className="grid gap-8 lg:grid-cols-2 lg:items-start lg:gap-10"
+          >
+            {youtubeVideos.map((video) => (
+              <YouTubeEmbed
+                key={video.id}
+                videoId={video.id}
+                title={video.title}
+                aspect={video.format === "short" ? "short" : "video"}
+                watchFormat={video.format}
+                className="organic-blob shadow-glass"
+              />
+            ))}
+          </motion.div>
+
+          <motion.div
+            variants={fadeUp}
+            custom={2}
+            className="mt-10 flex justify-end"
+          >
+            <Link
+              href="/promo"
+              className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/15 px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-forest-deep transition-all hover:shadow-gold-glow-sm"
+            >
+              Full Experience
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </motion.div>
+        </motion.div>
+      </section>
+    );
+  }
 
   return (
     <section
@@ -83,7 +173,20 @@ export default function VideoAd({ variant = "banner" }: VideoAdProps) {
               isCinema ? "absolute inset-0 min-h-[85vh]" : "aspect-video w-full"
             }`}
           >
-            {hasVideo && (
+            {useYouTube && youtubeSrc && (
+              <iframe
+                src={youtubeSrc}
+                title="Voyanté film"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className={`border-0 ${
+                  isCinema
+                    ? "absolute inset-0 z-[1] h-full min-h-[85vh] w-full"
+                    : "relative z-[1] aspect-video w-full"
+                }`}
+              />
+            )}
+            {showMp4 && (
               <video
                 ref={videoRef}
                 autoPlay
@@ -126,7 +229,29 @@ export default function VideoAd({ variant = "banner" }: VideoAdProps) {
                 : "bottom-4 left-4 right-4 md:bottom-6 md:left-6 md:right-6"
             }`}
           >
-            {hasVideo && (
+            {useYouTube && youtubeVideoId && (
+              <>
+                <a
+                  href={youtubeWatchUrl(youtubeVideoId, youtubeWatchFormat)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-full border border-cream/30 bg-forest-deep/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-cream backdrop-blur-md transition-colors hover:text-gold"
+                >
+                  YouTube
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+                {!isCinema && (
+                  <Link
+                    href="/promo"
+                    className="ml-auto inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/15 px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-cream backdrop-blur-sm transition-all hover:shadow-gold-glow-sm"
+                  >
+                    Full Experience
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                )}
+              </>
+            )}
+            {showMp4 && (
               <>
                 <button
                   type="button"
@@ -154,7 +279,7 @@ export default function VideoAd({ variant = "banner" }: VideoAdProps) {
                 </button>
               </>
             )}
-            {!isCinema && (
+            {!isCinema && !useYouTube && (
               <Link
                 href="/promo"
                 className="ml-auto inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/15 px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-cream backdrop-blur-sm transition-all hover:shadow-gold-glow-sm"

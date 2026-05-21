@@ -3,6 +3,7 @@ import Hero from "@/components/Hero";
 import HomeGallery from "@/components/HomeGallery";
 import VideoAd from "@/components/VideoAd";
 import HomePreview from "@/components/HomePreview";
+import { PROMO_VIDEOS } from "@/lib/promo-videos";
 
 export const metadata: Metadata = {
   title: "Home",
@@ -15,7 +16,7 @@ export default function HomePage() {
     <main>
       <Hero />
       <HomeGallery />
-      <VideoAd variant="banner" />
+      <VideoAd variant="banner" youtubeVideos={PROMO_VIDEOS} />
       <HomePreview />
     </main>
   );
